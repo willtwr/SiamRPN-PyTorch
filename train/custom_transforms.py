@@ -1,6 +1,6 @@
-import torch
 import numpy as np
 import cv2
+import torch
 
 
 class RandomStretch(object):
@@ -103,7 +103,9 @@ class RandomCrop(object):
             top = int(abs(ymin))
         if ymax > im_h:
             bottom = int(ymax - im_h)
-
+        
+        avg_value = np.mean(sample, axis=(0, 1))
+        
         xmin = int(max(0, xmin))
         xmax = int(min(im_w, xmax))
         ymin = int(max(0, ymin))
@@ -111,7 +113,7 @@ class RandomCrop(object):
         im_patch = sample[ymin:ymax, xmin:xmax]
         if left != 0 or right != 0 or top != 0 or bottom != 0:
             im_patch = cv2.copyMakeBorder(im_patch, top, bottom, left, right,
-                                          cv2.BORDER_CONSTANT, value=0)
+                                          cv2.BORDER_CONSTANT, value=avg_value)
         return im_patch
 
 

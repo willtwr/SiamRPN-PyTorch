@@ -32,9 +32,11 @@ class TrackerSiamRPN(Tracker):
             self.net.load_state_dict(torch.load(
                 net_path, map_location = lambda storage, loc: storage ))
         if self.cuda:
+            print('Training with GPU.')
             self.net = self.net.to(self.device)
 
         '''setup optimizer'''
+        print("Learning rate: {}".format(config.lr))
         self.optimizer   = torch.optim.SGD(
             self.net.parameters(),
             lr           = config.lr,
@@ -75,31 +77,30 @@ class TrackerSiamRPN(Tracker):
                                 ohem=config.ohem_reg)
 
         loss = cls_loss + config.lamb * reg_loss
-
-        '''anchors_show = anchors
-        exem_img = template[0].cpu().numpy().transpose(1, 2, 0)  # (127, 127, 3)
-        #cv2.imwrite('exem_img.png', exem_img)
-
-        inst_img = detection[0].cpu().numpy().transpose(1, 2, 0) # (255, 255, 3)
-        #cv2.imwrite('inst_img.png', inst_img)
-
-
-
-        topk = 1
-        cls_pred = F.softmax(pred_conf, dim=2)[0, :, 1]
-
-        topk_box = util.get_topk_box(cls_pred, pred_offset[0], anchors_show, topk=topk)
-        img_box = util.add_box_img(inst_img, topk_box, color=(0, 0, 255))
-
-        cv2.imwrite('pred_inst.png', img_box)
-
-        cls_pred = conf_target[0]
-        gt_box = util.get_topk_box(cls_pred, regression_target[0], anchors_show)
-        #print('gt_box', gt_box)
-        img_box = util.add_box_img(img_box, gt_box, color=(255, 0, 0), x = 1, y = 1)
-        #print('gt_box', gt_box)
-        cv2.imwrite('pred_inst_gt.png', img_box)'''
-
+        
+        # Draw ####################
+        if i % 100 == 0:
+            if train:
+                mode = 'train'
+            else:
+                mode = 'val'
+            
+            anchors_show = anchors
+            #exem_img = template[0].cpu().numpy().transpose(1, 2, 0)[:,:,::-1]  # (127, 127, 3)
+            inst_img = detection[0].cpu().numpy().transpose(1, 2, 0)[:,:,::-1] # (255, 255, 3)
+            
+            topk = 1
+            cls_pred = F.softmax(pred_conf, dim=2)[0, :, 1]
+    
+            topk_box = util.get_topk_box(cls_pred, pred_offset[0], anchors_show, topk=topk)
+            img_box = util.add_box_img(inst_img, topk_box, color=(0, 0, 255))  # Red
+            
+            cls_pred = conf_target[0]
+            gt_box = util.get_topk_box(cls_pred, regression_target[0], anchors_show)
+            img_box = util.add_box_img(img_box, gt_box, color=(255, 0, 0), x = 1, y = 1)  # Blue
+            cv2.imwrite('pred_inst_gt_{}.png'.format(mode), img_box)
+        # Draw End ####################
+        
         if train:
             self.optimizer.zero_grad()
             loss.backward()
@@ -109,14 +110,23 @@ class TrackerSiamRPN(Tracker):
         return cls_loss, reg_loss, loss
 
     '''save model'''
-    def save(self,model, exp_name_dir, epoch):
+    def save(self,model, exp_name_dir, epoch, max_save=10):
         util.adjust_learning_rate(self.optimizer, config.gamma)
 
         model_save_dir_pth = '{}/model'.format(exp_name_dir)
         if not os.path.exists(model_save_dir_pth):
-                os.makedirs(model_save_dir_pth)
+            os.makedirs(model_save_dir_pth)
         net_path = os.path.join(model_save_dir_pth, 'model_e%d.pth' % (epoch + 1))
         torch.save(model.net.state_dict(), net_path)
+        
+        if epoch + 1 > max_save:
+            lastsave = os.path.join(model_save_dir_pth, 'model_e%d.pth' % (epoch+1-max_save))
+            if os.path.exists(lastsave):
+                os.remove(lastsave)
+        
+    def adjust_lr(self, epoch):
+        for _ in range(epoch):
+            util.adjust_learning_rate(self.optimizer, config.gamma)
 
 '''class SiamRPN(nn.Module):
 

@@ -13,9 +13,9 @@ from config import config
 from torch.utils.data import Dataset
 from got10k.datasets import ImageNetVID, GOT10k
 from torchvision import datasets, transforms, utils
-from got10k.datasets import ImageNetVID, GOT10k
-from custom_transforms import Normalize, ToTensor, RandomStretch, \
-    RandomCrop, CenterCrop, RandomBlur, ColorAug
+#from got10k.datasets import ImageNetVID, GOT10k
+#from custom_transforms import Normalize, ToTensor, RandomStretch, \
+    #RandomCrop, CenterCrop, RandomBlur, ColorAug
 
 class TrainDataLoader(Dataset):
     def __init__(self, seq_dataset, z_transforms, x_transforms, name = 'GOT-10k'):
@@ -38,9 +38,9 @@ class TrainDataLoader(Dataset):
     def _pick_img_pairs(self, index_of_subclass):
 
         assert index_of_subclass < len(self.sub_class_dir), 'index_of_subclass should less than total classes'
-
+        
         video_name = self.sub_class_dir[index_of_subclass][0]
-
+        
         video_num  = len(video_name)
         video_gt   = self.sub_class_dir[index_of_subclass][1]
 
@@ -124,7 +124,7 @@ class TrainDataLoader(Dataset):
         hc_z = h + 0.5 * (w + h)
         s_z = np.sqrt(wc_z * hc_z)
 
-        s_x = s_z / (config.detection_img_size//2)
+        s_x = s_z / (config.detection_img_size_ori//2)
         img_mean_d = tuple(map(int, detection_img.mean(axis=(0, 1))))
 
         a_x_ = np.random.choice(range(-12,12))
@@ -135,12 +135,12 @@ class TrainDataLoader(Dataset):
 
         instance_img, a_x, b_y, w_x, h_x, scale_x = self.get_instance_image(  detection_img, d,
                                                                     config.template_img_size, # 127
-                                                                    config.detection_img_size,# 255
+                                                                    config.detection_img_size_ori,# 255
                                                                     config.context,           # 0.5
                                                                     a_x, b_y,
                                                                     img_mean_d )
 
-        size_x = config.detection_img_size
+        size_x = config.detection_img_size_ori
 
         x1, y1 = int((size_x + 1) / 2 - w_x / 2), int((size_x + 1) / 2 - h_x / 2)
         x2, y2 = int((size_x + 1) / 2 + w_x / 2), int((size_x + 1) / 2 + h_x / 2)
@@ -266,15 +266,15 @@ class TrainDataLoader(Dataset):
             if h < w:
                 scale_h_ = 1
                 scale_w_ = h/w
-                scale = config.detection_img_size/h
+                scale = config.detection_img_size_ori/h
             elif h > w:
                 scale_h_ = w/h
                 scale_w_ = 1
-                scale = config.detection_img_size/w
+                scale = config.detection_img_size_ori/w
             elif h == w:
                 scale_h_ = 1
                 scale_w_ = 1
-                scale = config.detection_img_size/w
+                scale = config.detection_img_size_ori/w
 
             gt_w = gt_w * scale_w_
             gt_h = gt_h * scale_h_
@@ -418,7 +418,9 @@ class TrainDataLoader(Dataset):
         return iou
 
     def _tranform(self):
-
+        #instance_img = Image.fromarray(np.uint8(self.ret['instance_img']))
+        #self.ret['train_x_transforms'] = self.x_transforms(instance_img)
+        
         self.ret['train_x_transforms'] = self.x_transforms(self.ret['instance_img'])
         self.ret['train_z_transforms'] = self.z_transforms(self.ret['exemplar_img'])
 
@@ -445,7 +447,7 @@ class TrainDataLoader(Dataset):
             index = random.choice(range(len(self.sub_class_dir)))'''
 
         if self.name == 'GOT-10k':
-            if index == 4418 or index == 8627 or index == 8629 or index == 9057 or index == 9058:
+            if index == 4418 or index == 4419 or index == 8627 or index == 8629 or index == 9057 or index == 9058:
                 index += 3
         self._pick_img_pairs(index)
         self.open()

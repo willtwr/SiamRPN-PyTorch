@@ -26,8 +26,8 @@ parser = argparse.ArgumentParser(description='PyTorch SiameseRPN Training')
 
 parser.add_argument('--train_path', default='../data/got10k-Curation', metavar='DIR',help='path to dataset')
 parser.add_argument('--experiment_name', default='default', metavar='DIR',help='path to weight')
-parser.add_argument('--checkpoint_path', default='experiments/default/model', help='resume')
-parser.add_argument('-e', '--epoch_i', default=0, help='resume epoch', type=int)
+parser.add_argument('--checkpoint_path', default=None, help='resume')
+parser.add_argument('--epoch_i', default=0, help='resume epoch', type=int)
 
 def main():
     '''parameter initialization'''
@@ -58,7 +58,6 @@ def main():
         ToTensor()
     ])
     train_x_transforms = transforms.Compose([
-        RandomCrop([config.detection_img_size, config.detection_img_size], config.max_translate),
         ToTensor()
     ])
 
@@ -103,15 +102,13 @@ def main():
 
     '''load weights'''
 
-    if not args.checkpoint_path == None and args.epoch_i > 0:
-        checkpoint_path = os.path.join(args.checkpoint_path, 'model_e{}.pth'.format(args.epoch_i))
-        assert os.path.isfile(checkpoint_path), '{} is not valid checkpoint_path'.format(checkpoint_path)
-        
-        checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    if not args.checkpoint_path == None:
+        assert os.path.isfile(args.checkpoint_path), '{} is not valid checkpoint_path'.format(args.checkpoint_path)
+        checkpoint = torch.load(args.checkpoint_path, map_location='cpu')
         if 'model' in checkpoint.keys():
-            model.net.load_state_dict(torch.load(checkpoint_path, map_location='cpu')['model'])
+            model.net.load_state_dict(torch.load(args.checkpoint_path, map_location='cpu')['model'])
         else:
-            model.net.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
+            model.net.load_state_dict(torch.load(args.checkpoint_path, map_location='cpu'))
         torch.cuda.empty_cache()
         print('You are loading the model.load_state_dict')
 
