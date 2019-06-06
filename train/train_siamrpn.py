@@ -16,15 +16,15 @@ from torch.utils.data import DataLoader
 from util import util, AverageMeter, SavePlot
 from got10k.datasets import ImageNetVID, GOT10k
 from torchvision import datasets, transforms, utils
-from custom_transforms import Normalize, ToTensor, RandomStretch, \
-    RandomCrop, CenterCrop, RandomBlur, ColorAug
+from custom_transforms import Normalize, ToTensor, RandomStretch, RandomCrop, CenterCrop, RandomBlur, ColorAug, RandomScale
 
+torch.cuda.set_device(0)
 torch.manual_seed(1234) # config.seed
 
 
 parser = argparse.ArgumentParser(description='PyTorch SiameseRPN Training')
 
-parser.add_argument('--train_path', default='../data/got10k-Curation', metavar='DIR',help='path to dataset')
+parser.add_argument('--train_path', default='/store_ssd/got10k-Curation', metavar='DIR',help='path to dataset')
 parser.add_argument('--experiment_name', default='default', metavar='DIR',help='path to weight')
 parser.add_argument('--checkpoint_path', default='experiments/default/model', help='resume')
 parser.add_argument('-e', '--epoch_i', default=0, help='resume epoch', type=int)
@@ -44,10 +44,10 @@ def main():
         root_dir = args.train_path
         seq_dataset = GOT10k(root_dir, subset='train')
     elif name == 'VID':
-        root_dir = '../data/ILSVRC'
+        root_dir = '/store_ssd/ILSVRC'
         seq_dataset = ImageNetVID(root_dir, subset=('train'))
     elif name == 'All':
-        root_dir_vid = '../data/ILSVRC'
+        root_dir_vid = '/store_ssd/ILSVRC'
         seq_datasetVID = ImageNetVID(root_dir_vid, subset=('train'))
         root_dir_got = args.train_path
         seq_datasetGOT = GOT10k(root_dir_got, subset='train')
@@ -59,6 +59,7 @@ def main():
     ])
     train_x_transforms = transforms.Compose([
         RandomCrop([config.detection_img_size, config.detection_img_size], config.max_translate),
+        RandomScale(config.scale_resize),
         ToTensor()
     ])
 
@@ -77,10 +78,10 @@ def main():
         root_dir = args.train_path
         seq_dataset_val = GOT10k(root_dir, subset='val')
     elif name == 'VID':
-        root_dir = '../data/ILSVRC'
+        root_dir = '/store_ssd/ILSVRC'
         seq_dataset_val = ImageNetVID(root_dir, subset=('val'))
     elif name == 'All':
-        root_dir_vid = '../data/ILSVRC'
+        root_dir_vid = '/store_ssd/ILSVRC'
         seq_datasetVID = ImageNetVID(root_dir_vid, subset=('val'))
         root_dir_got = args.train_path
         seq_datasetGOT = GOT10k(root_dir_got, subset='val')

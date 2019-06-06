@@ -4,7 +4,7 @@ from tqdm import tqdm
 import argparse
 
 parser = argparse.ArgumentParser(description='Fixed GOT-10k Dataset')
-parser.add_argument('--dataset_path', default='./data/GOT-10k/val', metavar='DIR',help='path to dataset')
+parser.add_argument('--dataset_path', default='/store_ssd/got10k/val', metavar='DIR',help='path to dataset')
 param = parser.parse_args()
 
 sub_class_dir = [sub_class_dir for sub_class_dir in os.listdir(param.dataset_path) if os.path.isdir(os.path.join(param.dataset_path, sub_class_dir))]

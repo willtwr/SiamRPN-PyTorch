@@ -41,8 +41,18 @@ class SiameseAlexNet(nn.Module):
         self.conv_r1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0)
         self.conv_r2 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0)
         
-        self.cls_head = nn.Conv2d(256, 2 * self.anchor_num, kernel_size=1, stride=1, padding=0)
-        self.regress_head = nn.Conv2d(256, 4 * self.anchor_num, kernel_size=1, stride=1, padding=0)        
+        self.cls_head = nn.Sequential(
+            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 2 * self.anchor_num, kernel_size=1, stride=1, padding=0),
+            )
+        self.regress_head = nn.Sequential(
+            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 4 * self.anchor_num, kernel_size=1, stride=1, padding=0),
+            )
 
     def init_weights(self):
         for m in self.modules():
@@ -62,17 +72,18 @@ class SiameseAlexNet(nn.Module):
         kernel_regression = self.conv_r1(template_feature)
         conv_score = self.conv_cls2(detection_feature)
         conv_regression = self.conv_r2(detection_feature)
-
-        conv_scores = conv_score.reshape(1, -1, self.score_displacement + 4, self.score_displacement + 4)
+        
+        conv_scores = conv_score.reshape(1, -1, self.score_displacement + 6, self.score_displacement + 6)
         score_filters = kernel_score.reshape(-1, 1, 6, 6)
-        pred_score = F.conv2d(conv_scores, score_filters, groups=N).reshape(N, 10, self.score_displacement + 1,
-                                                                            self.score_displacement + 1)
+        pred_score = F.conv2d(conv_scores, score_filters, groups=N*256).reshape(N, 256, self.score_displacement + 1,
+                                                                                self.score_displacement + 1)
+        pred_score = self.cls_head(pred_score)
 
-        conv_reg = conv_regression.reshape(1, -1, self.score_displacement + 4, self.score_displacement + 4)
+        conv_reg = conv_regression.reshape(1, -1, self.score_displacement + 6, self.score_displacement + 6)
         reg_filters = kernel_regression.reshape(-1, 1, 6, 6)
-        pred_regression = self.regress_adjust(
-            F.conv2d(conv_reg, reg_filters, groups=N).reshape(N, 20, self.score_displacement + 1,
-                                                              self.score_displacement + 1))
+        pred_regression = F.conv2d(conv_reg, reg_filters, groups=N*256).reshape(N, 256, self.score_displacement + 1, 
+                                                                                self.score_displacement + 1)
+        pred_regression = self.regress_head(pred_regression)
         return pred_score, pred_regression
 
     def track_init(self, template):

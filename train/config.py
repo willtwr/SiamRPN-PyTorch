@@ -6,7 +6,7 @@ class Config(object):
     template_img_size  = 127
     detection_img_size = 255
     detection_img_size_ori = 255  # 263
-    epoches = 250
+    epoches = 250  # 250
     train_epoch_size = 583 # 1166 / 583/ 291
     val_epoch_size = 11
 
@@ -15,13 +15,14 @@ class Config(object):
     train_num_workers = 4                  # number of workers of train dataloader
     valid_num_workers = 4
 
-    start_lr = 0.001
-    end_lr = 0.00001
+    start_lr = 0.005
+    end_lr = 0.0005
     warm_lr = 0.001
     warm_scale = warm_lr/start_lr
     lr = np.logspace(np.log10(start_lr), np.log10(end_lr), num=epoches)[0]
-    gamma = np.logspace(np.log10(start_lr), np.log10(end_lr), num=epoches)[1] / \
-            np.logspace(np.log10(start_lr), np.log10(end_lr), num=epoches)[0]
+    #gamma = np.logspace(np.log10(start_lr), np.log10(end_lr), num=epoches)[1] / \
+            #np.logspace(np.log10(start_lr), np.log10(end_lr), num=epoches)[0]
+    gamma = 0.95
     momentum = 0.9
     weight_decay = 0.0005
 
@@ -57,14 +58,14 @@ class Config(object):
     eps = 0.01
 
     max_translate = 4
-    scale_resize = (0.85, 1.15)
-    gray_ratio = 0.25
+    scale_resize = (0.95, 1.05)  # (0.85, 1.15)
+    gray_ratio = 0.  # 0.25
     exem_stretch = False
 
     '''config for net.py'''
     num_pos = 16
     num_neg = 48
-    lamb    = 0.1
+    lamb    = 5.
 
     ohem_pos = False
     ohem_neg = False

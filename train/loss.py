@@ -80,12 +80,14 @@ def rpn_cross_entropy_balance(input, target, num_pos, num_neg, anchors, ohem_pos
                 neg_loss_bid_final = neg_loss_bid[selected_neg_index]
         else:
             if len(pos_index) > 0:
-                neg_index_random = random.sample(np.where(target[batch_id].cpu() == 0)[0].tolist(), min_neg)
+                neg_index_random = random.sample(neg_index, min_neg)
+                #neg_index_random = random.sample(np.where(target[batch_id].cpu() == 0)[0].tolist(), min_neg)
                 #neg_index_random = np.where(target[batch_id].cpu() == 0)[0].tolist()
                 neg_loss_bid_final = F.cross_entropy(input=input[batch_id][neg_index_random],
                                                      target=target[batch_id][neg_index_random], reduction='none')
             else:
-                neg_index_random = random.sample(np.where(target[batch_id].cpu() == 0)[0].tolist(), num_neg)
+                neg_index_random = random.sample(neg_index, num_neg)
+                #neg_index_random = random.sample(np.where(target[batch_id].cpu() == 0)[0].tolist(), num_neg)
                 neg_loss_bid_final = F.cross_entropy(input=input[batch_id][neg_index_random],
                                                      target=target[batch_id][neg_index_random], reduction='none')
         loss_bid = (pos_loss_bid_final.mean() + neg_loss_bid_final.mean()) / 2

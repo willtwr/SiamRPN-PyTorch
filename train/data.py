@@ -364,8 +364,6 @@ class TrainDataLoader(Dataset):
             if i % 40 == 0:
                 label[neg_ind] = 0'''
 
-
-
         #max_index = np.argsort(iou.flatten())[-20:]
 
         return regression_target, label
@@ -421,8 +419,12 @@ class TrainDataLoader(Dataset):
         #instance_img = Image.fromarray(np.uint8(self.ret['instance_img']))
         #self.ret['train_x_transforms'] = self.x_transforms(instance_img)
         
-        self.ret['train_x_transforms'] = self.x_transforms(self.ret['instance_img'])
-        self.ret['train_z_transforms'] = self.z_transforms(self.ret['exemplar_img'])
+        self.ret['train_x_transforms'], scale = self.x_transforms(self.ret['instance_img'])
+        self.ret['train_z_transforms'], _ = self.z_transforms(self.ret['exemplar_img'])
+        
+        if scale:
+            self.ret['cx, cy, w, h'][2] = self.ret['cx, cy, w, h'][2] * scale
+            self.ret['cx, cy, w, h'][3] = self.ret['cx, cy, w, h'][3] * scale
 
     def __getitem__(self, index):
         index = random.choice(range(len(self.sub_class_dir)))
@@ -454,7 +456,7 @@ class TrainDataLoader(Dataset):
         self._tranform()
         regression_target, conf_target = self._target()
         self.count += 1
-
+        
         return self.ret['train_z_transforms'], self.ret['train_x_transforms'], regression_target, conf_target.astype(np.int64)
 
     def __len__(self):

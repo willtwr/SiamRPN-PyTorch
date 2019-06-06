@@ -22,11 +22,11 @@ class TrackerSiamRPN(Tracker):
 
         '''setup GPU device if available'''
         self.cuda   = torch.cuda.is_available()
-        self.device = torch.device('cuda:0' if self.cuda else 'cpu')
+        self.device = torch.device('cuda' if self.cuda else 'cpu')
 
         '''setup model'''
         self.net = SiameseAlexNet()
-        #self.net.init_weights()
+        self.net.init_weights()
 
         if net_path is not None:
             self.net.load_state_dict(torch.load(
@@ -51,7 +51,7 @@ class TrackerSiamRPN(Tracker):
             self.net.eval()
 
         template, detection, regression_target, conf_target = dataset
-
+        
         if self.cuda:
             template, detection = template.cuda(), detection.cuda()
             regression_target, conf_target = regression_target.cuda(), conf_target.cuda()
@@ -61,7 +61,7 @@ class TrackerSiamRPN(Tracker):
         pred_conf   = pred_score.reshape(-1, 2, config.size).permute(0, 2, 1)
 
         pred_offset = pred_regression.reshape(-1, 4, config.size).permute(0, 2, 1)
-
+        
         cls_loss = rpn_cross_entropy_balance(   pred_conf,
                                                 conf_target,
                                                 config.num_pos,
@@ -86,7 +86,8 @@ class TrackerSiamRPN(Tracker):
                 mode = 'val'
             
             anchors_show = anchors
-            #exem_img = template[0].cpu().numpy().transpose(1, 2, 0)[:,:,::-1]  # (127, 127, 3)
+            exem_img = template[0].cpu().numpy().transpose(1, 2, 0)[:,:,::-1]  # (127, 127, 3)
+            cv2.imwrite('exem_img_{}.png'.format(mode), exem_img)
             inst_img = detection[0].cpu().numpy().transpose(1, 2, 0)[:,:,::-1] # (255, 255, 3)
             
             topk = 1
@@ -125,8 +126,7 @@ class TrackerSiamRPN(Tracker):
                 os.remove(lastsave)
         
     def adjust_lr(self, epoch):
-        for _ in range(epoch):
-            util.adjust_learning_rate(self.optimizer, config.gamma)
+        util.adjust_learning_rate(self.optimizer, config.gamma**epoch)
 
 '''class SiamRPN(nn.Module):
 

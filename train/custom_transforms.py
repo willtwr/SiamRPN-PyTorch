@@ -52,7 +52,9 @@ class CenterCrop(object):
             top = int(abs(ymin))
         if ymax > im_h:
             bottom = int(ymax - im_h)
-
+        
+        avg_value = np.mean(sample, axis=(0, 1))    
+            
         xmin = int(max(0, xmin))
         xmax = int(min(im_w, xmax))
         ymin = int(max(0, ymin))
@@ -60,7 +62,7 @@ class CenterCrop(object):
         im_patch = sample[ymin:ymax, xmin:xmax]
         if left != 0 or right != 0 or top != 0 or bottom != 0:
             im_patch = cv2.copyMakeBorder(im_patch, top, bottom, left, right,
-                                          cv2.BORDER_CONSTANT, value=0)
+                                          cv2.BORDER_CONSTANT, value=avg_value)
         return im_patch
 
 
@@ -160,5 +162,23 @@ class Normalize(object):
 
 class ToTensor(object):
     def __call__(self, sample):
+        if isinstance(sample, tuple):
+            scale = sample[1]
+            sample = sample[0]
+        else:
+            scale = []
         sample = sample.transpose(2, 0, 1)
-        return torch.from_numpy(sample.astype(np.float32))
+        return torch.from_numpy(sample.astype(np.float32)), scale
+
+
+class RandomScale(object):
+    def __init__(self, scale=[0.85, 1.15]):
+        self.scale = scale
+
+    def __call__(self, sample):
+        scale = np.random.uniform(self.scale[0], self.scale[1])
+        size = sample.shape[:2]
+        sample = CenterCrop((size[0]*scale, size[1]*scale))(sample)
+        sample = CenterCrop((size[0], size[1]))(sample)
+        return sample, 1./scale
+
